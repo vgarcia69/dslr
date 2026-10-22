@@ -31,7 +31,7 @@ def histogram(path):
 		plt.legend(fontsize=6)
 		plt.title(course)
 	plt.tight_layout()
-	plt.savefig("histogram.png", dpi=150)
+	plt.savefig(du.plot_path("histogram.png"), dpi=150)
 	
 
 if __name__ == "__main__":

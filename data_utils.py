@@ -1,4 +1,7 @@
+import os
 import pandas as pd
+
+PLOTS_DIR = "plots"
 
 PALETTE = ["#ae0001", "#2a623d", "#222f5b", "#ecb939",
            "#7b3fa0", "#e07b39", "#3a9ad9", "#888888"]
@@ -65,3 +68,8 @@ def draw_pairs(ax, points, house_colors, size=24):
 		ys = [y for _, y, h in points if h == house]
 
 		ax.scatter(xs, ys, s=size, alpha=0.5, edgecolors="none", color=color, label=house)
+
+
+def plot_path(filename):
+	os.makedirs(PLOTS_DIR, exist_ok=True)
+	return os.path.join(PLOTS_DIR, filename)

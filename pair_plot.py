@@ -47,7 +47,7 @@ def pair_plot(data_path):
 
 	axes[0][0].legend(fontsize=4, markerscale=2)
 	fig.tight_layout()
-	fig.savefig("pair_plot.png", dpi=150)
+	fig.savefig(du.plot_path("pair_plot.png"), dpi=150)
 	
 
 if __name__ == "__main__":

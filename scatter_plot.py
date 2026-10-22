@@ -76,7 +76,7 @@ def scatter_plot(data_path):
 	axes[0][0].legend(fontsize=7, markerscale=2)
 	fig.suptitle(f"Most similar features: {pairs[0][2]} vs {pairs[0][3]}", fontsize=14)
 	fig.tight_layout()
-	fig.savefig("scatter_plot.png", dpi=150)
+	fig.savefig(du.plot_path("scatter_plot.png"), dpi=150)
 
 
 if __name__ == "__main__":

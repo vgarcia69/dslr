@@ -5,6 +5,8 @@ TRAIN    = datasets/dataset_train.csv
 TEST     = datasets/dataset_test.csv
 WEIGHTS  = weights.csv
 STAMP    = $(VENV)/.installed
+PLOTS    = plots
+OPEN     = $(shell command -v open 2>/dev/null || command -v xdg-open 2>/dev/null)
 
 .PHONY: help venv install venv-on venv-off describe histogram scatter pair train predict all clean fclean re
 
@@ -46,12 +48,15 @@ describe: $(STAMP)
 
 histogram: $(STAMP)
 	$(PYTHON) histogram.py $(TRAIN)
+	@[ -n "$(OPEN)" ] && $(OPEN) $(PLOTS)/histogram.png || true
 
 scatter: $(STAMP)
 	$(PYTHON) scatter_plot.py $(TRAIN)
+	@[ -n "$(OPEN)" ] && $(OPEN) $(PLOTS)/scatter_plot.png || true
 
 pair: $(STAMP)
 	$(PYTHON) pair_plot.py $(TRAIN)
+	@[ -n "$(OPEN)" ] && $(OPEN) $(PLOTS)/pair_plot.png || true
 
 train: $(STAMP)
 	$(PYTHON) logreg_train.py $(TRAIN)
@@ -66,5 +71,6 @@ clean:
 
 fclean: clean
 	rm -f $(WEIGHTS) houses.csv
+	rm -rf $(PLOTS)
 
 re: fclean all
