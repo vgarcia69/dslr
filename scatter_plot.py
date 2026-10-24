@@ -1,66 +1,50 @@
 import sys
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 import data_utils as du
-import pandas as pd
 
 
-def compute_pearson_coef(points):
-	if points is None or len(points) == 0:
-		return None
-	n = len(points)
-
-	x_bar = 0
-	y_bar = 0
-	for x, y, _ in points:
-		x_bar += x
-		y_bar += y
-	x_bar = x_bar / n
-	y_bar = y_bar / n
-
-	num = 0
-	sx = 0
-	sy = 0
-	for x, y, _ in points:
-		dx = x - x_bar
-		dy = y - y_bar
-		num += dx * dy
-		sx += dx * dx
-		sy += dy * dy
-
+def compute_pearson_coef(xs, ys):
+	n = len(xs)
+	if n == 0:
+		return 0
+	dx = xs - xs.sum() / n
+	dy = ys - ys.sum() / n
+	sx = (dx * dx).sum()
+	sy = (dy * dy).sum()
 	if sx == 0 or sy == 0:
 		return 0
-	return num / math.sqrt(sx * sy)
+	return (dx * dy).sum() / math.sqrt(sx * sy)
 
-def get_pairs(courses, df):
+
+def get_pairs(ds):
 	pairs = []
-	for i in range (0, len(courses)):
-		for j in range (i + 1, len(courses)):
-			points = du.get_points(courses[i], courses[j], df)
-			r = compute_pearson_coef(points)
-			pairs.append((r, points, courses[i], courses[j]))
+	courses = ds.courses
+	for i in range(len(courses)):
+		for j in range(i + 1, len(courses)):
+			xs, ys, labels = ds.points(courses[i], courses[j])
+			r = compute_pearson_coef(xs, ys)
+			pairs.append((r, (xs, ys, labels), courses[i], courses[j]))
 	pairs.sort(key=lambda pair: abs(pair[0]), reverse=True)
 	return pairs
 
 
 def scatter_plot(data_path):
-	df = du.read_file(data_path)
-	if df is None:
+	ds = du.load_dataset(data_path)
+	if ds is None:
 		return
 
-	courses = du.get_courses(df)
-	if len(courses) <= 1:
+	if len(ds.courses) <= 1:
 		print("There is an issue with courses in data file")
 		return
 
-	houses = du.get_houses(df)
-	if houses is None:
-		print("There is an issue with houses indata file")
+	if not ds.houses:
+		print("There is an issue with houses in data file")
 		return
 
-	house_colors = du.get_house_colors(houses)
-
-	pairs = get_pairs(courses, df)
+	house_colors = du.get_house_colors(ds.houses)
+	pairs = get_pairs(ds)
 
 	top = pairs[:9]
 	n = len(top)
@@ -69,9 +53,12 @@ def scatter_plot(data_path):
 
 	fig, axes = plt.subplots(rows, cols, figsize=(3 * cols, 2.5 * rows), squeeze=False)
 
-	for p, (_, points, _, _) in enumerate(top):
+	for p, (r, (xs, ys, labels), cx, cy) in enumerate(top):
 		ax = axes[p // cols][p % cols]
-		du.draw_pairs(ax, points, house_colors, 30)
+		du.draw_pairs(ax, xs, ys, labels, house_colors, 30)
+		ax.set_xlabel(cx, fontsize=7)
+		ax.set_ylabel(cy, fontsize=7)
+		ax.set_title(f"r = {r:.3f}", fontsize=8)
 
 	axes[0][0].legend(fontsize=7, markerscale=2)
 	fig.suptitle(f"Most similar features: {pairs[0][2]} vs {pairs[0][3]}", fontsize=14)

@@ -1,6 +1,5 @@
 import sys
 import math
-import pandas as pd
 import data_utils as du
 
 
@@ -76,20 +75,18 @@ def print_stats(stats, cols_per_block=5, width=15):
 
 
 def describe(path):
-	df = du.read_file(path)
-	if df is None:
+	ds = du.load_dataset(path)
+	if ds is None:
 		print("An error occured with the data_file")
 		return
 
-	stats = {}
-	for col in df.columns:
-		if not pd.api.types.is_numeric_dtype(df[col]):
-			continue
-		stats[col] = compute_stats(df[col])
-
-	if not stats:
+	if not ds.courses:
 		print("No numerical feature found.")
 		return
+
+	stats = {}
+	for course in ds.courses:
+		stats[course] = compute_stats(ds.column(course))
 
 	print_stats(stats)
 

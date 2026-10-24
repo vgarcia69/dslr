@@ -1,19 +1,12 @@
 import os
+import numpy as np
 import pandas as pd
 
 PLOTS_DIR = "plots"
+HOUSE_COL = "Hogwarts House"
 
 PALETTE = ["#ae0001", "#2a623d", "#222f5b", "#ecb939",
            "#7b3fa0", "#e07b39", "#3a9ad9", "#888888"]
-
-
-def get_courses(df):
-	courses = []
-	for col in df.columns:
-		if (pd.api.types.is_any_real_numeric_dtype(df[col])):
-			courses.append(col)
-	return courses
-
 
 KNOWN_COLORS = {
 	"Gryffindor": "#ae0001",
@@ -23,6 +16,67 @@ KNOWN_COLORS = {
 }
 
 
+class Dataset:
+	"""
+	Lit le CSV une seule fois avec pandas, puis range tout dans des tableaux numpy.
+
+	X        : np.ndarray float, shape (n_eleves, n_matieres). NaN = note manquante.
+	           ligne i   -> un eleve
+	           colonne j -> une matiere (courses[j])
+	labels   : np.ndarray, shape (n_eleves,). La maison de chaque eleve (NaN si inconnue).
+	courses  : liste des noms de matieres, dans l'ordre des colonnes de X.
+	houses   : liste triee des maisons presentes.
+	col_index: dict nom_de_matiere -> numero de colonne dans X.
+	"""
+
+	def __init__(self, df, house_col=HOUSE_COL):
+		self.courses = []
+		for col in df.columns:
+			if col != house_col and pd.api.types.is_any_real_numeric_dtype(df[col]):
+				self.courses.append(col)
+
+		self.col_index = {name: j for j, name in enumerate(self.courses)}
+		self.X = df[self.courses].to_numpy(dtype=float)
+
+		if house_col in df.columns:
+			self.labels = df[house_col].to_numpy(dtype=object)
+			known = self.labels[pd.notna(self.labels)]
+			self.houses = sorted(set(known))
+		else:
+			self.labels = np.full(len(df), np.nan, dtype=object)
+			self.houses = []
+
+	def __len__(self):
+		return self.X.shape[0]
+
+	def column(self, course):
+		"""Toutes les notes d'une matiere (NaN compris)."""
+		return self.X[:, self.col_index[course]]
+
+	def scores(self, course, house=None):
+		"""Notes d'une matiere sans les NaN, eventuellement filtrees sur une maison."""
+		col = self.column(course)
+		mask = ~np.isnan(col)
+		if house is not None:
+			mask &= (self.labels == house)
+		return col[mask]
+
+	def points(self, course_x, course_y):
+		"""(xs, ys, labels) des eleves qui ont une note dans les DEUX matieres."""
+		x = self.column(course_x)
+		y = self.column(course_y)
+		mask = ~np.isnan(x) & ~np.isnan(y)
+		return x[mask], y[mask], self.labels[mask]
+
+
+def load_dataset(data_path):
+	try:
+		df = pd.read_csv(data_path, index_col="Index")
+	except Exception:
+		return None
+	return Dataset(df)
+
+
 def get_house_colors(houses):
 	colors = {}
 	for i, house in enumerate(houses):
@@ -30,44 +84,10 @@ def get_house_colors(houses):
 	return colors
 
 
-def get_houses(df, col_name="Hogwarts House"):
-	houses = []
-	if col_name not in df.columns:
-		return None
-	for row in df[col_name]:
-		if pd.isna(row):
-			continue
-		if row not in houses:
-			houses.append(row)
-	return sorted(houses)
-
-
-def read_file(data_path):
-	try:
-		df = pd.read_csv(data_path, index_col="Index")
-	except Exception:
-		df = None
-	return df
-
-def get_points(course_x, course_y, df, house="Hogwarts House"):
-	points = []
-	if course_x not in df.columns or \
-		course_y not in df.columns or \
-		house not in df.columns:
-		return None
-
-	for index, row in df.iterrows():
-		if pd.isna(row[course_x]) or pd.isna(row[course_y]):
-			continue
-		points.append((row[course_x], row[course_y], row[house]))
-	return points
-
-def draw_pairs(ax, points, house_colors, size=24):
+def draw_pairs(ax, xs, ys, labels, house_colors, size=24):
 	for house, color in house_colors.items():
-		xs = [x for x, _, h in points if h == house]
-		ys = [y for _, y, h in points if h == house]
-
-		ax.scatter(xs, ys, s=size, alpha=0.5, edgecolors="none", color=color, label=house)
+		m = (labels == house)
+		ax.scatter(xs[m], ys[m], s=size, alpha=0.5, edgecolors="none", color=color, label=house)
 
 
 def plot_path(filename):

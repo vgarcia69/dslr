@@ -1,35 +1,31 @@
 import sys
 import matplotlib.pyplot as plt
 import data_utils as du
-import pandas as pd
 
-def draw_histogram(ax, course, df, house_colors, house_col="Hogwarts House"):
+
+def draw_histogram(ax, course, ds, house_colors):
 	for house, color in house_colors.items():
-		scores = []
-		for _, row in df.iterrows():
-			if row[house_col] == house and not pd.isna(row[course]):
-				scores.append(row[course])
-		ax.hist(scores, bins=20, alpha=0.5, color=color, label=house)
+		ax.hist(ds.scores(course, house), bins=20, alpha=0.5, color=color, label=house)
+
 
 def pair_plot(data_path):
-	df = du.read_file(data_path)
-	if df is None:
+	ds = du.load_dataset(data_path)
+	if ds is None:
 		print("Read_file failed")
 		return
 
-	houses = du.get_houses(df)
-	courses = du.get_courses(df)
-	if houses is None or courses is None:
+	if not ds.houses or not ds.courses:
 		print("Something is wrong with houses or courses")
 		return
 
-	house_colors = du.get_house_colors(houses)
+	house_colors = du.get_house_colors(ds.houses)
+	courses = ds.courses
 
 	n = len(courses)
 	fig, axes = plt.subplots(n, n, figsize=(1.5 * n, 1.25 * n), squeeze=False)
 
-	for i in range(0, n):
-		for j in range(0, n):
+	for i in range(n):
+		for j in range(n):
 			ax = axes[i][j]
 			ax.set_xticks([])
 			ax.set_yticks([])
@@ -37,18 +33,16 @@ def pair_plot(data_path):
 				ax.set_xlabel(courses[j], fontsize=6)
 			if j == 0:
 				ax.set_ylabel(courses[i], fontsize=6)
-			if (i == j):
-				draw_histogram(ax, courses[i], df, house_colors)
+			if i == j:
+				draw_histogram(ax, courses[i], ds, house_colors)
 			else:
-				points = du.get_points(courses[j], courses[i], df)
-				if points is None:
-					continue
-				du.draw_pairs(ax, points, house_colors, size=12)
+				xs, ys, labels = ds.points(courses[j], courses[i])
+				du.draw_pairs(ax, xs, ys, labels, house_colors, size=12)
 
 	axes[0][0].legend(fontsize=4, markerscale=2)
 	fig.tight_layout()
 	fig.savefig(du.plot_path("pair_plot.png"), dpi=150)
-	
+
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
