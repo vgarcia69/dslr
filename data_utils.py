@@ -26,6 +26,7 @@ class Dataset:
 	labels   : np.ndarray, shape (n_eleves,). La maison de chaque eleve (NaN si inconnue).
 	courses  : liste des noms de matieres, dans l'ordre des colonnes de X.
 	houses   : liste triee des maisons presentes.
+	index    : np.ndarray, shape (n_eleves,). La colonne "Index" du CSV.
 	col_index: dict nom_de_matiere -> numero de colonne dans X.
 	"""
 
@@ -37,6 +38,7 @@ class Dataset:
 
 		self.col_index = {name: j for j, name in enumerate(self.courses)}
 		self.X = df[self.courses].to_numpy(dtype=float)
+		self.index = df.index.to_numpy()
 
 		if house_col in df.columns:
 			self.labels = df[house_col].to_numpy(dtype=object)
@@ -67,6 +69,12 @@ class Dataset:
 		y = self.column(course_y)
 		mask = ~np.isnan(x) & ~np.isnan(y)
 		return x[mask], y[mask], self.labels[mask]
+
+
+def select_courses(ds, courses):
+	"""Copie de ds.X avec seulement les colonnes de `courses`, dans cet ordre."""
+	indices = [ds.col_index[name] for name in courses]
+	return ds.X[:, indices]
 
 
 def load_dataset(data_path):

@@ -5,13 +5,30 @@ import describe as d
 import math 
 import json
 
+training_courses = [
+	# "Arithmancy",
+	"Astronomy",
+	"Herbology",
+	# "Defense Against the Dark Arts",
+	"Divination",
+	"Muggle Studies",
+	"Ancient Runes",
+	"History of Magic",
+	"Transfiguration",
+	"Potions",
+	# "Care of Magical Creatures",
+	"Charms",
+	"Flying"
+]
+
 def build_Y(ds):
 	houses = np.array(ds.houses, dtype=object)
 	return (ds.labels == houses[:, None]).astype(float)
 
 
 def normalize_X(ds):
-	X = ds.X.copy()
+	X = du.select_courses(ds, training_courses)
+
 	n_rows, n_cols = X.shape
 
 	means = []
@@ -79,13 +96,13 @@ def main(path):
 
 	data = {
 		"houses": ds.houses,
-		"courses": ds.courses,
+		"courses": training_courses,
 		"thetas": [theta.tolist() for theta in thetas],
 		"means": means,
 		"stds": stds,
 	}
 
-	with open("students.json", "w") as f:
+	with open("training_datas.json", "w") as f:
 		json.dump(data, f, indent=4)
 
 if __name__ == "__main__":
